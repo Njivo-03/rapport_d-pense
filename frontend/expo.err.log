@@ -1,0 +1,24 @@
+Error: ENOENT: no such file or directory, scandir 'E:\rapport_dépenses\frontend\assets\images'
+    at Object.readdir (node:internal/fs/promises:956:18)
+    at getAbsoluteAssetRecord (E:\rapport_dépenses\frontend\node_modules\metro\src\Assets.js:77:17)
+    at getAsset (E:\rapport_dépenses\frontend\node_modules\metro\src\Assets.js:191:18)
+    at Server._processSingleAssetRequest (E:\rapport_dépenses\frontend\node_modules\metro\src\Server.js:335:20)
+    at Server._processRequest (E:\rapport_dépenses\frontend\node_modules\metro\src\Server.js:417:7)
+Error: ENOENT: no such file or directory, scandir 'E:\rapport_dépenses\frontend\assets\images'
+    at Object.readdir (node:internal/fs/promises:956:18)
+    at getAbsoluteAssetRecord (E:\rapport_dépenses\frontend\node_modules\metro\src\Assets.js:77:17)
+    at getAsset (E:\rapport_dépenses\frontend\node_modules\metro\src\Assets.js:191:18)
+    at Server._processSingleAssetRequest (E:\rapport_dépenses\frontend\node_modules\metro\src\Server.js:335:20)
+    at Server._processRequest (E:\rapport_dépenses\frontend\node_modules\metro\src\Server.js:417:7)
+Error: ENOENT: no such file or directory, scandir 'E:\rapport_dépenses\frontend\assets\images'
+    at Object.readdir (node:internal/fs/promises:956:18)
+    at getAbsoluteAssetRecord (E:\rapport_dépenses\frontend\node_modules\metro\src\Assets.js:77:17)
+    at getAsset (E:\rapport_dépenses\frontend\node_modules\metro\src\Assets.js:191:18)
+    at Server._processSingleAssetRequest (E:\rapport_dépenses\frontend\node_modules\metro\src\Server.js:335:20)
+    at Server._processRequest (E:\rapport_dépenses\frontend\node_modules\metro\src\Server.js:417:7)
+Error: ENOENT: no such file or directory, scandir 'E:\rapport_dépenses\frontend\assets\images'
+    at Object.readdir (node:internal/fs/promises:956:18)
+    at getAbsoluteAssetRecord (E:\rapport_dépenses\frontend\node_modules\metro\src\Assets.js:77:17)
+    at getAsset (E:\rapport_dépenses\frontend\node_modules\metro\src\Assets.js:191:18)
+    at Server._processSingleAssetRequest (E:\rapport_dépenses\frontend\node_modules\metro\src\Server.js:335:20)
+    at Server._processRequest (E:\rapport_dépenses\frontend\node_modules\metro\src\Server.js:417:7)

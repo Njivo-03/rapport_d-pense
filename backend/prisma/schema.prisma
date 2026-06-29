@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+  previewFeatures = ["queryCompiler"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  EMPLOYEE
+  MANAGER
+}
+
+enum ReportStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  REIMBURSED
+}
+
+enum ExpenseCategory {
+  TRANSPORT
+  RESTAURANT
+  HOTEL
+  FUEL
+  OFFICE_SUPPLIES
+  OTHER
+}
+
+enum PaymentMethod {
+  CARD
+  CASH
+  TRANSFER
+  OTHER
+}
+
+enum AttachmentType {
+  IMAGE
+  PDF
+}
+
+enum NotificationType {
+  REPORT_SUBMITTED
+  REPORT_APPROVED
+  REPORT_REJECTED
+  REPORT_REIMBURSED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  role         UserRole @default(EMPLOYEE)
+  isActive     Boolean  @default(true) @map("is_active")
+
+  expenses        Expense[]
+  reports         Report[]       @relation("EmployeeReports")
+  reviewedReports Report[]       @relation("ReviewedReports")
+  notifications   Notification[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([role])
+  @@map("users")
+}
+
+model Expense {
+  id            String          @id @default(cuid())
+  amount        Decimal         @db.Decimal(12, 2)
+  date          DateTime        @db.Date
+  currency      String          @default("EUR") @db.VarChar(3)
+  category      ExpenseCategory
+  description   String?
+  project       String?
+  mission       String?
+  paymentMethod PaymentMethod   @map("payment_method")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  reportId String? @map("report_id")
+  report   Report? @relation(fields: [reportId], references: [id], onDelete: SetNull)
+
+  attachments Attachment[]
+
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([reportId])
+  @@index([date])
+  @@index([category])
+  @@index([project])
+  @@index([mission])
+  @@index([deletedAt])
+  @@map("expenses")
+}
+
+model Report {
+  id             String        @id @default(cuid())
+  title          String
+  status         ReportStatus  @default(DRAFT)
+  managerComment String?       @map("manager_comment")
+
+  userId String @map("user_id")
+  user   User   @relation("EmployeeReports", fields: [userId], references: [id], onDelete: Restrict)
+
+  reviewedById String? @map("reviewed_by_id")
+  reviewedBy   User?   @relation("ReviewedReports", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  submittedAt  DateTime? @map("submitted_at")
+  approvedAt   DateTime? @map("approved_at")
+  rejectedAt   DateTime? @map("rejected_at")
+  reimbursedAt DateTime? @map("reimbursed_at")
+
+  expenses      Expense[]
+  notifications Notification[]
+
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([reviewedById])
+  @@index([submittedAt])
+  @@index([deletedAt])
+  @@map("reports")
+}
+
+model Attachment {
+  id           String         @id @default(cuid())
+  fileName     String         @map("file_name")
+  originalName String         @map("original_name")
+  mimeType     String         @map("mime_type")
+  fileSize     Int            @map("file_size")
+  filePath     String         @map("file_path")
+  type         AttachmentType
+
+  expenseId String  @map("expense_id")
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([expenseId])
+  @@map("attachments")
+}
+
+model Notification {
+  id      String           @id @default(cuid())
+  type    NotificationType
+  title   String
+  message String
+  isRead  Boolean          @default(false) @map("is_read")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  reportId String? @map("report_id")
+  report   Report? @relation(fields: [reportId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId, isRead])
+  @@index([reportId])
+  @@index([createdAt])
+  @@map("notifications")
+}

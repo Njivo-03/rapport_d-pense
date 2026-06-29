@@ -1,0 +1,8 @@
+
+> expense-report-mobile@1.0.0 start
+> expo start --localhost --port 8081
+
+Starting project at E:\rapport_dépenses\frontend
+Starting Metro Bundler
+Waiting on http://localhost:8081
+Logs for your project will appear below.
