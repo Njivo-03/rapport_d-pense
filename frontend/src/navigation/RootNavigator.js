@@ -5,6 +5,8 @@ import AddExpenseScreen from '../features/expenses/screens/AddExpenseScreen';
 import ExpenseDetailScreen from '../features/expenses/screens/ExpenseDetailScreen';
 import ManagerApprovalScreen from '../features/reports/screens/ManagerApprovalScreen';
 import ReportDetailScreen from '../features/reports/screens/ReportDetailScreen';
+import CreateReportScreen from '../features/reports/screens/CreateReportScreen';
+import AddToReportScreen from '../features/reports/screens/AddToReportScreen';
 import AppTabs from './AppTabs';
 import { routes } from './routes';
 import { colors } from '../theme';
@@ -45,6 +47,16 @@ export default function RootNavigator() {
         name={routes.MANAGER_APPROVAL}
         component={ManagerApprovalScreen}
         options={{ title: 'Approbation' }}
+      />
+      <Stack.Screen
+        name={routes.CREATE_REPORT}
+        component={CreateReportScreen}
+        options={{ title: 'Nouveau rapport' }}
+      />
+      <Stack.Screen
+        name={routes.ADD_TO_REPORT}
+        component={AddToReportScreen}
+        options={{ title: 'Ajouter à un rapport' }}
       />
     </Stack.Navigator>
   );

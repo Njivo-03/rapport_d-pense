@@ -8,6 +8,8 @@ export const routes = {
   REPORTS: 'Reports',
   REPORTS_LIST: 'ReportsList',
   REPORT_DETAIL: 'ReportDetail',
+  CREATE_REPORT: 'CreateReport', // ← ajouter
+  ADD_TO_REPORT: 'AddToReport',
   MANAGER_APPROVAL: 'ManagerApproval',
   NOTIFICATIONS: 'Notifications',
   PROFILE: 'Profile',

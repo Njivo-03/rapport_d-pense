@@ -3,7 +3,7 @@ import React, { createContext, useCallback, useContext, useReducer } from 'react
 import * as SecureStore from 'expo-secure-store';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const API_BASE = 'http://192.168.43.14:4000/api'; // ⚠️ Adapte l'IP si besoin
+const API_BASE = 'http://192.169.0.117:3000/api'; // ⚠️ Adapte l'IP si besoin
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
 const initialState = { expenses: [], total: 0, page: 1, loading: false, error: null };
@@ -22,7 +22,7 @@ function reducer(state, action) {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const getToken = async () => {
-  try { return await SecureStore.getItemAsync('token'); }
+  try { return await SecureStore.getItemAsync('authToken'); } // 'authToken' pas 'token'
   catch { return null; }
 };
 
@@ -58,19 +58,34 @@ export function ExpensesProvider({ children }) {
 
   // ── Charger les dépenses ──────────────────────────────────────────────────
   const fetchExpenses = useCallback(async (filters = {}) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    try {
-      const headers = await authHeaders();
-      const params  = new URLSearchParams(filters).toString();
-      const res     = await fetch(`${API_BASE}/expenses?${params}`, { headers });
-      const json    = await res.json();
-      if (!res.ok) throw new Error(json.message || 'Erreur serveur');
-      dispatch({ type: 'SET_EXPENSES', payload: json.data });
-    } catch (err) {
-      console.error('❌ fetchExpenses:', err.message);
-      dispatch({ type: 'SET_ERROR', payload: err.message });
+  dispatch({ type: 'SET_LOADING', payload: true });
+  try {
+    const headers = await authHeaders();
+    const params  = new URLSearchParams(filters).toString();
+    const res     = await fetch(`${API_BASE}/expenses?${params}`, { headers });
+
+    if (res.status === 304) {
+      dispatch({ type: 'SET_LOADING', payload: false });
+      return;
     }
-  }, []);
+
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Erreur serveur');
+
+    // json.data = { items, total, page, limit }
+    dispatch({
+      type: 'SET_EXPENSES',
+      payload: {
+        expenses: json.data?.items || json.data || [],
+        total:    json.data?.total || 0,
+        page:     json.data?.page  || 1,
+      },
+    });
+  } catch (err) {
+    console.error('❌ fetchExpenses:', err.message);
+    dispatch({ type: 'SET_ERROR', payload: err.message });
+  }
+}, []);
 
   // ── Créer une dépense ─────────────────────────────────────────────────────
   const createExpense = useCallback(async (payload) => {

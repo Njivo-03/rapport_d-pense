@@ -1,7 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
-  previewFeatures = ["queryCompiler"]
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -104,10 +103,10 @@ model Expense {
 }
 
 model Report {
-  id             String        @id @default(cuid())
+  id             String       @id @default(cuid())
   title          String
-  status         ReportStatus  @default(DRAFT)
-  managerComment String?       @map("manager_comment")
+  status         ReportStatus @default(DRAFT)
+  managerComment String?      @map("manager_comment")
 
   userId String @map("user_id")
   user   User   @relation("EmployeeReports", fields: [userId], references: [id], onDelete: Restrict)

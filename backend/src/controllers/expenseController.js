@@ -1,7 +1,7 @@
 // src/controllers/expenseController.js
-const service = require('../services/expenseService');
+import * as service from '../services/expenseService.js';
 
-const createExpense = async (req, res) => {
+export const createExpense = async (req, res) => {
   try {
     const expense = await service.createExpense(req.user.id, req.body, req.file);
     return res.status(201).json({ success: true, message: 'Dépense créée avec succès.', data: expense });
@@ -10,7 +10,7 @@ const createExpense = async (req, res) => {
   }
 };
 
-const getExpenses = async (req, res) => {
+export const getExpenses = async (req, res) => {
   try {
     const result = await service.getExpenses(req.user, req.query);
     return res.status(200).json({ success: true, data: result });
@@ -19,7 +19,7 @@ const getExpenses = async (req, res) => {
   }
 };
 
-const getExpenseById = async (req, res) => {
+export const getExpenseById = async (req, res) => {
   try {
     const expense = await service.getExpenseById(req.params.id, req.user);
     return res.status(200).json({ success: true, data: expense });
@@ -28,7 +28,7 @@ const getExpenseById = async (req, res) => {
   }
 };
 
-const updateExpense = async (req, res) => {
+export const updateExpense = async (req, res) => {
   try {
     const expense = await service.updateExpense(req.params.id, req.user.id, req.user.role, req.body, req.file);
     return res.status(200).json({ success: true, message: 'Dépense mise à jour.', data: expense });
@@ -37,7 +37,7 @@ const updateExpense = async (req, res) => {
   }
 };
 
-const deleteExpense = async (req, res) => {
+export const deleteExpense = async (req, res) => {
   try {
     await service.deleteExpense(req.params.id, req.user.id, req.user.role);
     return res.status(200).json({ success: true, message: 'Dépense supprimée.' });
@@ -46,7 +46,7 @@ const deleteExpense = async (req, res) => {
   }
 };
 
-const getExpenseStats = async (req, res) => {
+export const getExpenseStats = async (req, res) => {
   try {
     const stats = await service.getExpenseStats(req.user.id);
     return res.status(200).json({ success: true, data: stats });
@@ -55,4 +55,11 @@ const getExpenseStats = async (req, res) => {
   }
 };
 
-module.exports = { createExpense, getExpenses, getExpenseById, updateExpense, deleteExpense, getExpenseStats };
+export const updateExpenseStatus = async (req, res) => {
+  try {
+    const expense = await service.updateExpenseStatus(req.params.id, req.user, req.body.status);
+    return res.status(200).json({ success: true, message: 'Statut mis à jour.', data: expense });
+  } catch (err) {
+    return res.status(err.status || 500).json({ success: false, message: err.message || 'Erreur serveur.' });
+  }
+};

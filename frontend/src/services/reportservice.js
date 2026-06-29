@@ -8,7 +8,7 @@
 
 import * as SecureStore from 'expo-secure-store';
 
-const BASE_URL = 'http://localhost:4000/api';
+const BASE_URL = 'http://192.169.0.117:3000/api';
 
 // ─── Helper : headers avec token JWT ─────────────────────────────────────────
 

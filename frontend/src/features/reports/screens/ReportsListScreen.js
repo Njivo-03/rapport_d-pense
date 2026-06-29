@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { Searchbar, Text, TouchableRipple } from 'react-native-paper';
+import { FAB, Searchbar, Text, TouchableRipple } from 'react-native-paper';
 import ReportItem from '../../../components/ReportItem';
 import { routes } from '../../../navigation/routes';
-import { fetchReports } from '../../../services/reportservice';
+import { fetchReports, updateReport } from '../../../services/reportservice';
 import { colors, spacing } from '../../../theme';
 
 const tabs = [
@@ -14,21 +14,24 @@ const tabs = [
   { label: 'Refusé', value: 'rejected' },
 ];
 
-export default function ReportsListScreen({ navigation }) {
+export default function ReportsListScreen({ navigation, route }) {
+  const expenseId = route.params?.expenseId; // mode sélection si présent
+  const isSelectMode = Boolean(expenseId);
+
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState(isSelectMode ? 'draft' : 'all');
   const [query, setQuery] = useState('');
+  const [attaching, setAttaching] = useState(false);
 
-  // ─── Chargement des données ──────────────────────────────────────────────
+  // ─── Chargement ──────────────────────────────────────────────────────────
   const loadReports = useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
       setError(null);
-
       const data = await fetchReports();
       setReports(data);
     } catch (err) {
@@ -39,35 +42,56 @@ export default function ReportsListScreen({ navigation }) {
     }
   }, []);
 
-  useEffect(() => {
-    loadReports();
-  }, [loadReports]);
+  useEffect(() => { loadReports(); }, [loadReports]);
 
-  // Recharger à chaque fois que l'écran est affiché (retour de ReportDetail)
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      loadReports();
-    });
+    const unsubscribe = navigation.addListener('focus', () => loadReports());
     return unsubscribe;
   }, [navigation, loadReports]);
 
-  // ─── Filtrage local (rapide, sans appel API supplémentaire) ──────────────
+  // ─── Attacher la dépense au rapport sélectionné ──────────────────────────
+  const handleSelectReport = useCallback(async (report) => {
+    if (!isSelectMode) {
+      navigation.navigate(routes.REPORT_DETAIL, { reportId: report.id });
+      return;
+    }
+
+    try {
+      setAttaching(true);
+      const currentExpenseIds = (report.expenses || []).map((e) => e.id);
+      if (currentExpenseIds.includes(expenseId)) {
+        // Déjà dans ce rapport → juste naviguer
+        navigation.navigate(routes.REPORT_DETAIL, { reportId: report.id });
+        return;
+      }
+      await updateReport(report.id, {
+        expenseIds: [...currentExpenseIds, expenseId],
+      });
+      navigation.navigate(routes.REPORT_DETAIL, { reportId: report.id });
+    } catch (err) {
+      setError(err.message || 'Erreur lors de l\'attachement.');
+    } finally {
+      setAttaching(false);
+    }
+  }, [isSelectMode, expenseId, navigation]);
+
+  // ─── Filtrage ────────────────────────────────────────────────────────────
   const filteredReports = useMemo(() => {
     return reports.filter((report) => {
-      const matchesTab =
-        activeTab === 'all' || report.status === activeTab;
-      const matchesSearch = report.title
-        .toLowerCase()
-        .includes(query.trim().toLowerCase());
+      const matchesTab = activeTab === 'all' || report.status === activeTab;
+      const matchesSearch = report.title.toLowerCase().includes(query.trim().toLowerCase());
+      // En mode sélection, on ne montre que les rapports DRAFT
+      if (isSelectMode && report.status !== 'draft') return false;
       return matchesTab && matchesSearch;
     });
-  }, [reports, activeTab, query]);
+  }, [reports, activeTab, query, isSelectMode]);
 
-  // ─── Render ──────────────────────────────────────────────────────────────
-  if (loading) {
+  // ─── Render états ────────────────────────────────────────────────────────
+  if (loading || attaching) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={colors.primary} size="large" />
+        {attaching && <Text style={styles.attachingText}>Ajout en cours...</Text>}
       </View>
     );
   }
@@ -84,74 +108,96 @@ export default function ReportsListScreen({ navigation }) {
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => loadReports(true)}
-          colors={[colors.primary]}
-        />
-      }
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Mes Rapports</Text>
-        <Text style={styles.subtitle}>Suivi de tous vos rapports</Text>
-      </View>
-
-      <Searchbar
-        iconColor={colors.textSecondary}
-        inputStyle={styles.searchInput}
-        onChangeText={setQuery}
-        placeholder="Rechercher un rapport"
-        placeholderTextColor={colors.textSecondary}
-        style={styles.search}
-        value={query}
-      />
-
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
-        horizontal
-        contentContainerStyle={styles.tabs}
-        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadReports(true)}
+            colors={[colors.primary]}
+          />
+        }
       >
-        {tabs.map((tab) => {
-          const active = tab.value === activeTab;
-          return (
-            <TouchableRipple
-              borderless
-              key={tab.value}
-              onPress={() => setActiveTab(tab.value)}
-              style={[styles.tab, active && styles.activeTab]}
-            >
-              <Text style={[styles.tabText, active && styles.activeTabText]}>
-                {tab.label}
+        <View style={styles.header}>
+          <Text style={styles.title}>
+            {isSelectMode ? 'Choisir un rapport' : 'Mes Rapports'}
+          </Text>
+          <Text style={styles.subtitle}>
+            {isSelectMode
+              ? 'Sélectionnez un rapport brouillon pour y ajouter la dépense'
+              : 'Suivi de tous vos rapports'}
+          </Text>
+        </View>
+
+        <Searchbar
+          iconColor={colors.textSecondary}
+          inputStyle={styles.searchInput}
+          onChangeText={setQuery}
+          placeholder="Rechercher un rapport"
+          placeholderTextColor={colors.textSecondary}
+          style={styles.search}
+          value={query}
+        />
+
+        {/* Tabs — masqués en mode sélection */}
+        {!isSelectMode && (
+          <ScrollView
+            horizontal
+            contentContainerStyle={styles.tabs}
+            showsHorizontalScrollIndicator={false}
+          >
+            {tabs.map((tab) => {
+              const active = tab.value === activeTab;
+              return (
+                <TouchableRipple
+                  borderless
+                  key={tab.value}
+                  onPress={() => setActiveTab(tab.value)}
+                  style={[styles.tab, active && styles.activeTab]}
+                >
+                  <Text style={[styles.tabText, active && styles.activeTabText]}>
+                    {tab.label}
+                  </Text>
+                </TouchableRipple>
+              );
+            })}
+          </ScrollView>
+        )}
+
+        <View style={styles.list}>
+          {filteredReports.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {isSelectMode
+                  ? 'Aucun rapport brouillon. Créez-en un d\'abord.'
+                  : 'Aucun rapport trouvé.'}
               </Text>
-            </TouchableRipple>
-          );
-        })}
+            </View>
+          ) : (
+            filteredReports.map((report) => (
+              <TouchableRipple
+                borderless
+                key={report.id}
+                onPress={() => handleSelectReport(report)}
+              >
+                <ReportItem {...report} />
+              </TouchableRipple>
+            ))
+          )}
+        </View>
       </ScrollView>
 
-      <View style={styles.list}>
-        {filteredReports.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Aucun rapport trouvé.</Text>
-          </View>
-        ) : (
-          filteredReports.map((report) => (
-            <TouchableRipple
-              borderless
-              key={report.id}
-              onPress={() =>
-                navigation.navigate(routes.REPORT_DETAIL, { reportId: report.id })
-              }
-            >
-              <ReportItem {...report} />
-            </TouchableRipple>
-          ))
-        )}
-      </View>
-    </ScrollView>
+      {/* FAB créer rapport — masqué en mode sélection */}
+      {!isSelectMode && (
+        <FAB
+          icon="plus"
+          style={styles.fab}
+          onPress={() => navigation.navigate(routes.CREATE_REPORT)}
+        />
+      )}
+    </View>
   );
 }
 
@@ -160,13 +206,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     gap: spacing.lg,
     padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: 100,
   },
   centered: {
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
     padding: spacing.xl,
+  },
+  attachingText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    marginTop: spacing.sm,
   },
   errorText: {
     color: colors.error,
@@ -243,5 +294,12 @@ const styles = StyleSheet.create({
   emptyText: {
     color: colors.textSecondary,
     fontSize: 14,
+    textAlign: 'center',
+  },
+  fab: {
+    backgroundColor: colors.primary,
+    bottom: 24,
+    position: 'absolute',
+    right: 24,
   },
 });

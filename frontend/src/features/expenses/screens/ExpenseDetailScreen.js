@@ -220,6 +220,16 @@ export default function ExpenseDetailScreen({ navigation, route }) {
             Supprimer
           </SecondaryButton>
         </View>
+        {/* ── Ajouter au rapport ────────────────────────────────────────── */}
+           <PrimaryButton
+              icon="file-plus-outline"
+              onPress={() => navigation.navigate(routes.ADD_TO_REPORT, {
+                expense: expense,
+              })}
+              style={{ marginTop: spacing.sm }}
+            >
+              Ajouter à un rapport
+            </PrimaryButton>
 
       </ScrollView>
 

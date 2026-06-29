@@ -1,16 +1,15 @@
-// 1. Charger le .env pour que Prisma trouve la DATABASE_URL
-import 'dotenv/config'; 
-
-// 2. Importer le client depuis ton dossier de génération personnalisé
-import { PrismaClient } from '../src/generated/prisma/index.js';
+import 'dotenv/config';
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('🌱 Début du processus de seed...');
 
-  const password = 'password123'; // Le mot de passe que tu utiliseras
+  const password = 'password123';
   const hashedPassword = await bcrypt.hash(password, 10);
 
   console.log('🔍 Vérification de l\'utilisateur test@test.com...');
@@ -18,9 +17,8 @@ async function main() {
   const user = await prisma.user.upsert({
     where: { email: 'test@test.com' },
     update: {
-      // Si l'utilisateur existe déjà, on s'assure qu'il est actif
       isActive: true,
-      passwordHash: hashedPassword // On met à jour le mot de passe au cas où
+      passwordHash: hashedPassword,
     },
     create: {
       email: 'test@test.com',
@@ -35,7 +33,6 @@ async function main() {
   console.log('✅ Utilisateur prêt !');
   console.log('📧 Email: test@test.com');
   console.log('🔑 Mot de passe: password123');
-  console.log('-------------------------------');
 }
 
 main()

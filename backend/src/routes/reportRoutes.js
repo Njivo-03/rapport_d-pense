@@ -9,7 +9,7 @@ import {
   rejectReport,
   submitReport,
   updateReport,
-} from '../controllers/reportController.js';
+} from '../controllers/reportcontroller.js';
 import { protect as authenticate } from '../middlewares/auth.middleware.js';
 
 const router = Router();

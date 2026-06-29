@@ -8,6 +8,8 @@ import errorHandler from './middlewares/errorHandler.js';
 
 const app = express();
 
+app.set('etag', false); // ← ici
+
 app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));

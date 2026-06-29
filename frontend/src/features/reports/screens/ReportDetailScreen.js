@@ -1,3 +1,4 @@
+// src/features/reports/screens/ReportDetailScreen.js
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -6,7 +7,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { Text } from 'react-native-paper';
+import { FAB, Text } from 'react-native-paper';
 import AppCard from '../../../components/AppCard';
 import ExpenseItem from '../../../components/ExpenseItem';
 import PrimaryButton from '../../../components/PrimaryButton';
@@ -56,6 +57,14 @@ export default function ReportDetailScreen({ navigation, route }) {
     loadReport();
   }, [loadReport]);
 
+  // Recharger quand on revient sur l'écran
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadReport();
+    });
+    return unsubscribe;
+  }, [navigation, loadReport]);
+
   // ─── Soumettre ─────────────────────────────────────────────────────────────
   const handleSubmit = useCallback(() => {
     Alert.alert(
@@ -72,10 +81,9 @@ export default function ReportDetailScreen({ navigation, route }) {
               Alert.alert('Succès', 'Rapport soumis avec succès.', [
                 {
                   text: 'OK',
-                  onPress: () => {
-                    // Rafraîchir et retourner à la liste
-                    navigation.navigate(routes.REPORTS_LIST);
-                  },
+                 onPress: () => navigation.navigate(routes.APP, {
+  screen: routes.REPORTS,
+}),
                 },
               ]);
             } catch (err) {
@@ -89,17 +97,32 @@ export default function ReportDetailScreen({ navigation, route }) {
     );
   }, [reportId, navigation]);
 
-  // ─── Export PDF (placeholder — intégrer une lib PDF si besoin) ─────────────
+  // ─── Export PDF ────────────────────────────────────────────────────────────
   const handleExportPDF = useCallback(() => {
     Alert.alert('Export PDF', "L'export PDF sera disponible prochainement.");
   }, []);
 
   // ─── Justificatifs ─────────────────────────────────────────────────────────
   const handleAttachments = useCallback(() => {
-    // Navigue vers un écran de justificatifs si vous en avez un
-    // navigation.navigate(routes.ATTACHMENTS, { reportId });
     Alert.alert('Justificatifs', 'Écran des justificatifs à implémenter.');
   }, []);
+
+  // ─── FAB : ajouter une dépense au rapport ──────────────────────────────────
+  const handleAddExpense = useCallback(() => {
+  Alert.alert(
+    'Ajouter une dépense',
+    'Allez dans la liste des dépenses et utilisez le bouton "Ajouter à un rapport".',
+    [
+      { text: 'OK' },
+      {
+        text: 'Voir les dépenses',
+        onPress: () => navigation.navigate(routes.APP, {
+          screen: routes.EXPENSES,
+        }),
+      },
+    ]
+  );
+}, [navigation]);
 
   // ─── Render états ──────────────────────────────────────────────────────────
   if (loading) {
@@ -118,92 +141,106 @@ export default function ReportDetailScreen({ navigation, route }) {
     );
   }
 
-  // Le bouton "Soumettre" n'est visible que pour les rapports DRAFT ou REJECTED
   const canSubmit = report.status === 'draft' || report.status === 'rejected';
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* En-tête */}
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text style={styles.title}>{report.title}</Text>
-          <Text style={styles.subtitle}>Résumé et justificatifs</Text>
-        </View>
-        <StatusBadge status={report.status} />
-      </View>
-
-      {/* Résumé */}
-      <AppCard contentStyle={styles.summary}>
-        <SummaryRow label="Période" value={report.period || '—'} />
-        <SummaryRow label="Créé le" value={report.date || '—'} />
-        <SummaryRow label="Total" value={report.amount} highlight />
-        {report.managerComment ? (
-          <View style={styles.commentBox}>
-            <Text style={styles.commentLabel}>Commentaire manager :</Text>
-            <Text style={styles.commentText}>{report.managerComment}</Text>
+    <View style={styles.screen}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── En-tête ─────────────────────────────────────────────────── */}
+        <View style={styles.header}>
+          <View style={styles.headerText}>
+            <Text style={styles.title}>{report.title}</Text>
+            <Text style={styles.subtitle}>Résumé et justificatifs</Text>
           </View>
-        ) : null}
-      </AppCard>
-
-      {/* Dépenses */}
-      <AppCard>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            Dépenses ({report.expenses?.length || 0})
-          </Text>
-          <Text style={styles.sectionTotal}>{report.amount}</Text>
+          <StatusBadge status={report.status} />
         </View>
-        {report.expenses?.length > 0 ? (
-          report.expenses.map((expense) => (
-            <ExpenseItem key={expense.id} {...expense} />
-          ))
-        ) : (
-          <Text style={styles.emptyText}>Aucune dépense dans ce rapport.</Text>
+
+        {/* ── Résumé ──────────────────────────────────────────────────── */}
+        <AppCard contentStyle={styles.summary}>
+          <SummaryRow label="Période" value={report.period || '—'} />
+          <SummaryRow label="Créé le" value={report.date || '—'} />
+          <SummaryRow label="Total" value={report.amount} highlight />
+          {report.managerComment ? (
+            <View style={styles.commentBox}>
+              <Text style={styles.commentLabel}>Commentaire manager :</Text>
+              <Text style={styles.commentText}>{report.managerComment}</Text>
+            </View>
+          ) : null}
+        </AppCard>
+
+        {/* ── Dépenses ────────────────────────────────────────────────── */}
+        <AppCard>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Dépenses ({report.expenses?.length || 0})
+            </Text>
+            <Text style={styles.sectionTotal}>{report.amount}</Text>
+          </View>
+          {report.expenses?.length > 0 ? (
+            report.expenses.map((expense) => (
+              <ExpenseItem key={expense.id} {...expense} />
+            ))
+          ) : (
+            <Text style={styles.emptyText}>Aucune dépense dans ce rapport.</Text>
+          )}
+        </AppCard>
+
+        {/* ── Actions secondaires ──────────────────────────────────────── */}
+        <View style={styles.actions}>
+          <SecondaryButton
+            icon="file-pdf-box"
+            style={styles.actionButton}
+            onPress={handleExportPDF}
+          >
+            Exporter PDF
+          </SecondaryButton>
+          <SecondaryButton
+            icon="image-multiple-outline"
+            style={styles.actionButton}
+            onPress={handleAttachments}
+          >
+            Justificatifs
+          </SecondaryButton>
+        </View>
+
+        {/* ── Soumettre ───────────────────────────────────────────────── */}
+        {canSubmit && (
+          <PrimaryButton
+            icon="send-outline"
+            onPress={handleSubmit}
+            loading={submitting}
+            disabled={submitting}
+          >
+            {submitting ? 'Soumission...' : 'Soumettre le rapport'}
+          </PrimaryButton>
         )}
-      </AppCard>
+      </ScrollView>
 
-      {/* Actions secondaires */}
-      <View style={styles.actions}>
-        <SecondaryButton
-          icon="file-pdf-box"
-          style={styles.actionButton}
-          onPress={handleExportPDF}
-        >
-          Exporter PDF
-        </SecondaryButton>
-        <SecondaryButton
-          icon="image-multiple-outline"
-          style={styles.actionButton}
-          onPress={handleAttachments}
-        >
-          Justificatifs
-        </SecondaryButton>
-      </View>
-
-      {/* Soumettre — visible seulement si DRAFT ou REJECTED */}
+      {/* ── FAB ajouter dépense ─────────────────────────────────────── */}
       {canSubmit && (
-        <PrimaryButton
-          icon="send-outline"
-          onPress={handleSubmit}
-          loading={submitting}
-          disabled={submitting}
-        >
-          {submitting ? 'Soumission...' : 'Soumettre le rapport'}
-        </PrimaryButton>
+        <FAB
+          icon="plus"
+          style={styles.fab}
+          onPress={handleAddExpense}
+        />
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: colors.background,
+    flex: 1,
+  },
   container: {
     backgroundColor: colors.background,
     gap: spacing.lg,
     padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: 100, // espace pour le FAB
   },
   centered: {
     alignItems: 'center',
@@ -303,5 +340,11 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
+  },
+  fab: {
+    backgroundColor: colors.primary,
+    bottom: 24,
+    position: 'absolute',
+    right: 24,
   },
 });
